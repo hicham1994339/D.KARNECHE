@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>عيادة الدكتور قرناش</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial,Tahoma,sans-serif;
+    background:#f1f5f9;
+    color:#172033
+}
+*{box-sizing:border-box}
+button,input,textarea{font-family:inherit}
+button{
+    border:0;
+    border-radius:8px;
+    padding:11px 18px;
+    cursor:pointer
+}
+input,textarea{
+    width:100%;
+    padding:11px;
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    margin:6px 0 15px
+}
+textarea{min-height:100px}
+
+#login{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg,#075985,#0f766e)
+}
+.login-box{
+    background:white;
+    width:380px;
+    max-width:92%;
+    padding:30px;
+    border-radius:18px
+}
+.login-box h1{text-align:center}
+.primary{
+    background:#0f766e;
+    color:white;
+    width:100%
+}
+.danger{background:#dc2626;color:white}
+
+#app{display:none}
+
+.sidebar{
+    position:fixed;
+    right:0;
+    top:0;
+    bottom:0;
+    width:240px;
+    background:#0f172a;
+    color:white;
+    padding:20px
+}
+.sidebar button{
+    width:100%;
+    margin:5px 0;
+    text-align:right;
+    background:#ffffff10;
+    color:white
+}
+.sidebar button:hover{
+    background:#0f766e
+}
+
+main{
+    margin-right:240px;
+    padding:25px
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:14px;
+    margin-bottom:20px
+}
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px
+}
+
+table{
+    width:100%;
+    border-collapse:collapse
+}
+th,td{
+    padding:12px;
+    border-bottom:1px solid #e2e8f0;
+    text-align:right
+}
+
+.page{display:none}
+.page.active{display:block}
+
+@media(max-width:700px){
+    .sidebar{
+        position:relative;
+        width:100%
+    }
+    main{
+        margin-right:0
+    }
+    .cards{
+        grid-template-columns:1fr
+    }
+}
+</style>
+</head>
+
+<body>
+
+<section id="login">
+
+<div class="login-box">
+
+<h1>⚕️ عيادة الدكتور قرناش</h1>
+
+<p style="text-align:center">
+نظام إدارة العيادة
+</p>
+
+<input id="email"
+       type="email"
+       placeholder="البريد الإلكتروني">
+
+<input id="password"
+       type="password"
+       placeholder="كلمة المرور">
+
+<button class="primary" onclick="login()">
+تسجيل الدخول
+</button>
+
+<p id="loginError" style="color:red"></p>
+
+</div>
+
+</section>
+
+
+<section id="app">
+
+<aside class="sidebar">
+
+<h2>الدكتور قرناش</h2>
+
+<button onclick="page('dashboard')">
+🏠 لوحة التحكم
+</button>
+
+<button onclick="page('patients')">
+👥 المرضى
+</button>
+
+<button onclick="page('appointments')">
+📅 المواعيد
+</button>
+
+<button onclick="page('prescriptions')">
+💊 الوصفات
+</button>
+
+<button onclick="logout()">
+🚪 تسجيل الخروج
+</button>
+
+</aside>
+
+
+<main>
+
+<section id="dashboard" class="page active">
+
+<div class="card">
+
+<h1>مرحبًا دكتور قرناش 👨‍⚕️</h1>
+
+<p>
+بياناتك محفوظة على قاعدة البيانات ويمكن الوصول إليها بعد تسجيل الدخول من أي جهاز.
+</p>
+
+</div>
+
+<div class="cards">
+
+<div class="card">
+<h3>المرضى</h3>
+<h1 id="patientCount">0</h1>
+</div>
+
+<div class="card">
+<h3>المواعيد</h3>
+<h1 id="appointmentCount">0</h1>
+</div>
+
+<div class="card">
+<h3>الوصفات</h3>
+<h1 id="prescriptionCount">0</h1>
+</div>
+
+</div>
+
+</section>
+
+
+<section id="patients" class="page">
+
+<div class="card">
+
+<h2>المرضى</h2>
+
+<input id="search"
+       placeholder="ابحث عن مريض..."
+       oninput="loadPatients()">
+
+<input id="patientName"
+       placeholder="اسم المريض">
+
+<input id="patientPhone"
+       placeholder="رقم الهاتف">
+
+<input id="patientBirth"
+       type="date">
+
+<textarea id="patientNotes"
+          placeholder="ملاحظات"></textarea>
+
+<button onclick="addPatient()">
+إضافة المريض
+</button>
+
+<hr>
+
+<div id="patientsList"></div>
+
+</div>
+
+</section>
+
+
+<section id="appointments" class="page">
+
+<div class="card">
+
+<h2>المواعيد</h2>
+
+<input id="appointmentDate"
+       type="date">
+
+<input id="appointmentTime"
+       type="time">
+
+<input id="appointmentReason"
+       placeholder="سبب الزيارة">
+
+<button onclick="addAppointment()">
+إضافة موعد
+</button>
+
+<hr>
+
+<div id="appointmentsList"></div>
+
+</div>
+
+</section>
+
+
+<section id="prescriptions" class="page">
+
+<div class="card">
+
+<h2>الوصفات الطبية</h2>
+
+<input id="prescriptionDiagnosis"
+       placeholder="التشخيص">
+
+<textarea id="prescriptionMedicines"
+          placeholder="الأدوية والتعليمات"></textarea>
+
+<textarea id="prescriptionNotes"
+          placeholder="ملاحظات الطبيب"></textarea>
+
+<button onclick="addPrescription()">
+حفظ الوصفة
+</button>
+
+<hr>
+
+<div id="prescriptionsList"></div>
+
+</div>
+
+</section>
+
+</main>
+
+</section>
+
+
+<script>
+
+/* =========================================
+   ضع بيانات مشروع Supabase هنا
+========================================= */
+
+const SUPABASE_URL =
+"ضع_رابط_مشروع_Supabase_هنا";
+
+const SUPABASE_KEY =
+"ضع_PUBLISHABLE_KEY_هنا";
+
+
+const db = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+
+/* =========================================
+   LOGIN
+========================================= */
+
+async function login(){
+
+    const email =
+        document.getElementById("email").value;
+
+    const password =
+        document.getElementById("password").value;
+
+    const {data,error} =
+        await db.auth.signInWithPassword({
+            email,
+            password
+        });
+
+    if(error){
+
+        document.getElementById("loginError")
+            .textContent =
+            "بيانات الدخول غير صحيحة.";
+
+        return;
+    }
+
+    document.getElementById("login")
+        .style.display="none";
+
+    document.getElementById("app")
+        .style.display="block";
+
+    await refresh();
+}
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+async function logout(){
+
+    await db.auth.signOut();
+
+    location.reload();
+}
+
+
+/* =========================================
+   PAGE
+========================================= */
+
+function page(name){
+
+    document
+        .querySelectorAll(".page")
+        .forEach(x =>
+            x.classList.remove("active")
+        );
+
+    document
+        .getElementById(name)
+        .classList.add("active");
+}
+
+
+/* =========================================
+   PATIENTS
+========================================= */
+
+async function addPatient(){
+
+    const {
+        data:{user}
+    } =
+    await db.auth.getUser();
+
+    const name =
+        document.getElementById("patientName")
+        .value.trim();
+
+    if(!name){
+
+        alert("أدخل اسم المريض");
+
+        return;
+    }
+
+    const fileNumber =
+        "DR-" +
+        Date.now();
+
+    const {error} =
+    await db
+    .from("patients")
+    .insert({
+
+        owner_id:user.id,
+
+        file_number:fileNumber,
+
+        full_name:name,
+
+        phone:
+        document.getElementById("patientPhone")
+        .value,
+
+        birth_date:
+        document.getElementById("patientBirth")
+        .value || null,
+
+        notes:
+        document.getElementById("patientNotes")
+        .value
+
+    });
+
+    if(error){
+
+        alert(error.message);
+
+        return;
+    }
+
+    document.getElementById("patientName").value="";
+    document.getElementById("patientPhone").value="";
+    document.getElementById("patientBirth").value="";
+    document.getElementById("patientNotes").value="";
+
+    await refresh();
+}
+
+
+async function loadPatients(){
+
+    const search =
+        document.getElementById("search")
+        .value.trim();
+
+    let query =
+        db
+        .from("patients")
+        .select("*")
+        .order("created_at",{ascending:false});
+
+    if(search){
+
+        query =
+        query.ilike(
+            "full_name",
+            `%${search}%`
+        );
+    }
+
+    const {data,error}=await query;
+
+    if(error){
+
+        console.error(error);
+
+        return;
+    }
+
+    document.getElementById("patientsList")
+    .innerHTML =
+
+    data.map(p=>`
+
+        <div class="card">
+
+        <strong>
+        ${escapeHTML(p.full_name)}
+        </strong>
+
+        <p>
+        رقم الملف:
+        ${escapeHTML(p.file_number)}
+        </p>
+
+        <p>
+        الهاتف:
+        ${escapeHTML(p.phone || "-")}
+        </p>
+
+        <p>
+        الملاحظات:
+        ${escapeHTML(p.notes || "-")}
+        </p>
+
+        <button
+        class="danger"
+        onclick="deletePatient('${p.id}')">
+
+        حذف
+
+        </button>
+
+        </div>
+
+    `).join("");
+}
+
+
+async function deletePatient(id){
+
+    if(!confirm("هل تريد حذف المريض؟"))
+        return;
+
+    await db
+        .from("patients")
+        .delete()
+        .eq("id",id);
+
+    await refresh();
+}
+
+
+/* =========================================
+   APPOINTMENTS
+========================================= */
+
+async function addAppointment(){
+
+    const {
+        data:{user}
+    } =
+    await db.auth.getUser();
+
+    const {data:patient} =
+    await db
+    .from("patients")
+    .select("id")
+    .limit(1)
+    .single();
+
+    if(!patient){
+
+        alert("أضف مريضًا أولًا.");
+
+        return;
+    }
+
+    const {error} =
+    await db
+    .from("appointments")
+    .insert({
+
+        owner_id:user.id,
+
+        patient_id:patient.id,
+
+        appointment_date:
+        document.getElementById(
+            "appointmentDate"
+        ).value,
+
+        appointment_time:
+        document.getElementById(
+            "appointmentTime"
+        ).value,
+
+        reason:
+        document.getElementById(
+            "appointmentReason"
+        ).value
+
+    });
+
+    if(error){
+
+        alert(error.message);
+
+        return;
+    }
+
+    await refresh();
+}
+
+
+async function loadAppointments(){
+
+    const {data,error} =
+    await db
+    .from("appointments")
+    .select(`
+        *,
+        patients(full_name)
+    `)
+    .order("appointment_date");
+
+    if(error)return;
+
+    document.getElementById(
+        "appointmentsList"
+    ).innerHTML =
+
+    data.map(a=>`
+
+        <div class="card">
+
+        <strong>
+        ${escapeHTML(
+            a.patients?.full_name || "-"
+        )}
+        </strong>
+
+        <p>
+        ${escapeHTML(a.appointment_date)}
+        -
+        ${escapeHTML(a.appointment_time)}
+        </p>
+
+        <p>
+        ${escapeHTML(a.reason || "")}
+        </p>
+
+        </div>
+
+    `).join("");
+}
+
+
+/* =========================================
+   PRESCRIPTIONS
+========================================= */
+
+async function addPrescription(){
+
+    const {
+        data:{user}
+    } =
+    await db.auth.getUser();
+
+    const {data:patient} =
+    await db
+    .from("patients")
+    .select("id")
+    .limit(1)
+    .single();
+
+    if(!patient){
+
+        alert("أضف مريضًا أولًا.");
+
+        return;
+    }
+
+    const medicines =
+        document.getElementById(
+            "prescriptionMedicines"
+        ).value.trim();
+
+    if(!medicines){
+
+        alert("أدخل الأدوية.");
+
+        return;
+    }
+
+    const {error} =
+    await db
+    .from("prescriptions")
+    .insert({
+
+        owner_id:user.id,
+
+        patient_id:patient.id,
+
+        diagnosis:
+        document.getElementById(
+            "prescriptionDiagnosis"
+        ).value,
+
+        medicines,
+
+        notes:
+        document.getElementById(
+            "prescriptionNotes"
+        ).value
+
+    });
+
+    if(error){
+
+        alert(error.message);
+
+        return;
+    }
+
+    await refresh();
+}
+
+
+async function loadPrescriptions(){
+
+    const {data,error} =
+    await db
+    .from("prescriptions")
+    .select(`
+        *,
+        patients(full_name)
+    `)
+    .order("created_at",{ascending:false});
+
+    if(error)return;
+
+    document.getElementById(
+        "prescriptionsList"
+    ).innerHTML =
+
+    data.map(p=>`
+
+        <div class="card">
+
+        <strong>
+        ${escapeHTML(
+            p.patients?.full_name || "-"
+        )}
+        </strong>
+
+        <p>
+        التشخيص:
+        ${escapeHTML(p.diagnosis || "-")}
+        </p>
+
+        <p style="white-space:pre-line">
+        ${escapeHTML(p.medicines)}
+        </p>
+
+        </div>
+
+    `).join("");
+}
+
+
+/* =========================================
+   DASHBOARD
+========================================= */
+
+async function refresh(){
+
+    await loadPatients();
+    await loadAppointments();
+    await loadPrescriptions();
+
+    const {count:p} =
+    await db
+    .from("patients")
+    .select("*",{count:"exact",head:true});
+
+    const {count:a} =
+    await db
+    .from("appointments")
+    .select("*",{count:"exact",head:true});
+
+    const {count:r} =
+    await db
+    .from("prescriptions")
+    .select("*",{count:"exact",head:true});
+
+    document.getElementById(
+        "patientCount"
+    ).textContent=p || 0;
+
+    document.getElementById(
+        "appointmentCount"
+    ).textContent=a || 0;
+
+    document.getElementById(
+        "prescriptionCount"
+    ).textContent=r || 0;
+}
+
+
+/* =========================================
+   SECURITY
+========================================= */
+
+function escapeHTML(value){
+
+    return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+
+/* =========================================
+   RESTORE SESSION
+========================================= */
+
+(async function(){
+
+    const {data} =
+        await db.auth.getSession();
+
+    if(data.session){
+
+        document.getElementById("login")
+            .style.display="none";
+
+        document.getElementById("app")
+            .style.display="block";
+
+        await refresh();
+    }
+
+})();
+
+</script>
+
+</body>
+</html>
